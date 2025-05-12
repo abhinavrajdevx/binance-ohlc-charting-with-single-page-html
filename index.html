@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Binance Candlestick Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --input-bg: #fff;
+            --input-border: #ccc;
+            --shadow-color: rgba(0,0,0,0.1);
+            --switch-bg: #ccc;
+            --switch-knob: white;
+            --green-candle: #00B746;
+            --red-candle: #EF403C;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --card-bg: #2c2c2c;
+            --border-color: #444;
+            --primary-color: #0096FF;
+            --primary-hover-color: #006bb3;
+            --input-bg: #333;
+            --input-border: #555;
+            --shadow-color: rgba(0,0,0,0.3);
+            --switch-bg: #555;
+            --switch-knob: #1a1a1a;
+            --green-candle: #17C671;
+            --red-candle: #FF3E30;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1400px; /* Increased max-width for larger screens */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .theme-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .theme-toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--switch-bg);
+            transition: .4s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--switch-knob);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .controls label {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: var(--text-color);
+        }
+
+        .controls select,
+        .controls input[type="text"],
+        .controls button {
+            padding: 10px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            font-size: 1em;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        .controls select:focus,
+        .controls input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-color-translucent, rgba(0,123,255,0.25));
+        }
+
+
+        .controls button {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s ease;
+            align-self: flex-end; /* Align button to bottom if controls wrap */
+            height: 40px; /* Match select height */
+        }
+
+        .controls button:hover {
+            background-color: var(--primary-hover-color);
+        }
+        .controls button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+
+        #chart-container {
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            overflow: hidden; /* ApexCharts handles internal scroll/zoom */
+        }
+
+        #chart {
+            min-height: 550px; /* Slightly taller chart */
+        }
+
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            font-style: italic;
+            color: var(--text-color);
+            background-color: var(--card-bg);
+            border-radius: 6px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CryptoChart</h1>
+            <div class="theme-switcher">
+                <span>Light</span>
+                <label class="theme-toggle-switch">
+                    <input type="checkbox" id="themeToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Dark</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="pairSelect">Trading Pair:</label>
+                <select id="pairSelect">
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                    <option value="DOGEUSDT">DOGE/USDT</option>
+                    <option value="MATICUSDT">MATIC/USDT</option>
+                    <option value="DOTUSDT">DOT/USDT</option>
+                    <option value="LINKUSDT">LINK/USDT</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="timeframeSelect">Timeframe:</label>
+                <select id="timeframeSelect">
+                    <option value="1m">1 Minute</option>
+                    <option value="5m" selected>5 Minutes</option>
+                    <option value="15m">15 Minutes</option>
+                    <option value="30m">30 Minutes</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="4h">4 Hours</option>
+                    <option value="1d">1 Day</option>
+                </select>
+            </div>
+            <button id="fetchButton">Fetch & Draw Chart</button>
+        </div>
+
+        <div id="status">Select pair and timeframe, then click "Fetch & Draw Chart".</div>
+
+        <div id="chart-container">
+            <div id="chart"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.binance.com/api/v3/klines';
+        const DAYS_OF_DATA = 7;
+        const API_LIMIT_PER_REQUEST = 1000;
+
+        let chart;
+        let currentTheme = 'light';
+
+        const pairSelect = document.getElementById('pairSelect');
+        const timeframeSelect = document.getElementById('timeframeSelect');
+        const fetchButton = document.getElementById('fetchButton');
+        const statusDiv = document.getElementById('status');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // --- Theme Management ---
+        function applyTheme(theme) {
+            currentTheme = theme;
+            document.body.classList.toggle('dark-mode', theme === 'dark');
+            themeToggle.checked = (theme === 'dark');
+            if (chart) {
+                chart.updateOptions({
+                    theme: {
+                        mode: theme
+                    },
+                    chart: { background: 'transparent' }, // Important for card background to show
+                    plotOptions: {
+                        candlestick: {
+                            colors: {
+                                upward: theme === 'dark' ? 'var(--green-candle)' : '#00B746',
+                                downward: theme === 'dark' ? 'var(--red-candle)' : '#EF403C'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('chartTheme', newTheme);
+        }
+
+        themeToggle.addEventListener('change', toggleTheme);
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('chartTheme') || 'light';
+            applyTheme(savedTheme);
+            // Auto-fetch on load for default pair/timeframe
+            // main(); 
+        });
+
+
+        // --- Data Fetching and Charting ---
+        function getIntervalInMilliseconds(intervalString) {
+            const unit = intervalString.slice(-1);
+            const value = parseInt(intervalString.slice(0, -1));
+            switch (unit) {
+                case 'm': return value * 60 * 1000;
+                case 'h': return value * 60 * 60 * 1000;
+                case 'd': return value * 24 * 60 * 60 * 1000;
+                default: return 5 * 60 * 1000; // Default to 5m
+            }
+        }
+        
+        async function fetchCandlestickData(symbol, interval) {
+            statusDiv.textContent = `Fetching ${symbol} (${interval}) data...`;
+            fetchButton.disabled = true;
+            let allKlines = [];
+            const now = Date.now();
+            let startTime = now - (DAYS_OF_DATA * 24 * 60 * 60 * 1000);
+            
+            const intervalMs = getIntervalInMilliseconds(interval);
+            const totalCandlesExpected = Math.ceil((DAYS_OF_DATA * 24 * 60 * 60 * 1000) / intervalMs);
+            
+            let fetchedCandlesCount = 0;
+            const MAX_ATTEMPTS_PER_CHUNK_FETCH = 5; // Max iterations for the while loop
+            let attempts = 0;
+
+            try {
+                // Loop to fetch data in chunks if necessary
+                while (startTime < now && fetchedCandlesCount < totalCandlesExpected && attempts < MAX_ATTEMPTS_PER_CHUNK_FETCH) {
+                    attempts++;
+                    let limitForThisRequest = Math.min(API_LIMIT_PER_REQUEST, totalCandlesExpected - fetchedCandlesCount + 1); // +1 for safety
+                    if (limitForThisRequest <=0) break;
+
+
+                    const url = `${API_BASE_URL}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${startTime}&limit=${limitForThisRequest}`;
+                    console.log(`Fetching: ${url}`);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API Error ${response.status}: ${errorData.msg || response.statusText}`);
+                    }
+                    const klinesBatch = await response.json();
+
+                    if (klinesBatch.length === 0) {
+                        console.log("No more data from API for this period or limit reached.");
+                        break; 
+                    }
+                    
+                    allKlines = allKlines.concat(klinesBatch);
+                    fetchedCandlesCount += klinesBatch.length;
+                    
+                    // Set startTime for the next batch. Binance klines are [openTime, open, high, low, close, volume, closeTime, ...]
+                    // We need the openTime of the last candle + 1ms to avoid fetching the same candle again.
+                    startTime = klinesBatch[klinesBatch.length - 1][0] + 1; 
+
+                    // Small delay to be nice to the API
+                    if (fetchedCandlesCount < totalCandlesExpected && klinesBatch.length === API_LIMIT_PER_REQUEST) {
+                         await new Promise(resolve => setTimeout(resolve, 300)); 
+                    }
+                }
+
+                console.log(`Fetched a total of ${allKlines.length} klines in ${attempts} requests for ${symbol} (${interval}). Expected around ${totalCandlesExpected}.`);
+
+                // Deduplicate (based on open time) and sort
+                const uniqueKlinesMap = new Map();
+                allKlines.forEach(kline => uniqueKlinesMap.set(kline[0], kline)); // kline[0] is open time
+                const sortedUniqueKlines = Array.from(uniqueKlinesMap.values()).sort((a, b) => a[0] - b[0]);
+                
+                // Ensure we only take the most recent data up to totalCandlesExpected or what's available
+                const finalKlines = sortedUniqueKlines.slice(-totalCandlesExpected); 
+                
+                statusDiv.textContent = `Successfully fetched ${finalKlines.length} data points for ${symbol} (${interval}).`;
+                fetchButton.disabled = false;
+                return finalKlines;
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                statusDiv.textContent = `Error: ${error.message}. Check console for details.`;
+                fetchButton.disabled = false;
+                return null;
+            }
+        }
+
+        function transformDataForChart(klines) {
+            if (!klines || klines.length === 0) return [];
+            return klines.map(kline => ({
+                x: new Date(kline[0]), // Open time
+                y: [
+                    parseFloat(kline[1]), // Open
+                    parseFloat(kline[2]), // High
+                    parseFloat(kline[3]), // Low
+                    parseFloat(kline[4])  // Close
+                ]
+            }));
+        }
+
+        function renderChart(seriesData, symbol, interval) {
+            const chartOptions = {
+                series: [{
+                    name: 'Candles',
+                    data: seriesData
+                }],
+                chart: {
+                    type: 'candlestick',
+                    height: 550,
+                    background: 'transparent', // Let card background show
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 600,
+                    },
+                    zoom: {
+                        enabled: true,
+                        type: 'x',
+                        autoScaleYaxis: true
+                    },
+                    toolbar: {
+                        show: true,
+                        autoSelected: 'zoom'
+                    }
+                },
+                theme: {
+                    mode: currentTheme
+                },
+                title: {
+                    text: `${symbol} - ${interval} Candlesticks (Last ${DAYS_OF_DATA} Days)`,
+                    align: 'left',
+                    style: {
+                        fontSize: '16px',
+                        // color will be handled by theme
+                    }
+                },
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        datetimeUTC: false, // Display in local time
+                        // format: 'dd MMM HH:mm' // ApexCharts will auto-format nicely
+                    },
+                    tooltip: {
+                        enabled: true,
+                        // format: 'dd MMM yyyy HH:mm'
+                    }
+                },
+                yaxis: {
+                    tooltip: {
+                        enabled: true
+                    },
+                    labels: {
+                        formatter: function (value) {
+                            // Basic dynamic precision based on value magnitude
+                            if (value > 1000) return value.toFixed(2);
+                            if (value > 1) return value.toFixed(4);
+                            return value.toFixed(8); // For very small values
+                        }
+                    }
+                },
+                tooltip: {
+                    x: {
+                        format: 'dd MMM yyyy, HH:mm'
+                    },
+                    shared: true,
+                    intersect: false,
+                },
+                plotOptions: {
+                    candlestick: {
+                        colors: {
+                            upward: currentTheme === 'dark' ? 'var(--green-candle)' : '#00B746',
+                            downward: currentTheme === 'dark' ? 'var(--red-candle)' : '#EF403C'
+                        },
+                         wick: {
+                            useFillColor: true,
+                        }
+                    }
+                },
+                responsive: [{
+                    breakpoint: 768, // For smaller screens
+                    options: {
+                        chart: {
+                            height: 400
+                        },
+                        title: {
+                            style: {
+                                fontSize: '14px'
+                            }
+                        }
+                    }
+                }]
+            };
+
+            if (chart) {
+                chart.destroy();
+            }
+            chart = new ApexCharts(document.querySelector("#chart"), chartOptions);
+            chart.render()
+                .catch(err => {
+                    console.error("Chart rendering error:", err);
+                    statusDiv.textContent = "Error rendering chart. See console.";
+                });
+        }
+
+        async function main() {
+            const symbol = pairSelect.value;
+            const interval = timeframeSelect.value;
+
+            if (!symbol) {
+                statusDiv.textContent = "Please select a trading pair.";
+                return;
+            }
+            if (!interval) {
+                statusDiv.textContent = "Please select a timeframe.";
+                return;
+            }
+
+            document.getElementById('chart').innerHTML = ''; // Clear previous chart area
+            statusDiv.textContent = `Processing ${symbol} (${interval})...`;
+
+            const klinesData = await fetchCandlestickData(symbol, interval);
+            
+            if (klinesData && klinesData.length > 0) {
+                const chartData = transformDataForChart(klinesData);
+                renderChart(chartData, symbol.toUpperCase(), interval);
+            } else if (klinesData && klinesData.length === 0) {
+                statusDiv.textContent = `No data found for ${symbol} (${interval}) in the last ${DAYS_OF_DATA} days. The pair might not have enough history for this timeframe or Binance API returned empty.`;
+                if(chart) chart.destroy(); // Clear old chart if no new data
+            } else {
+                // Error message already set by fetchCandlestickData
+                if(chart) chart.destroy(); // Clear old chart on error
+            }
+        }
+
+        fetchButton.addEventListener('click', main);
+
+        // Optional: Auto-fetch when selections change (can be aggressive on API)
+        // pairSelect.addEventListener('change', main);
+        // timeframeSelect.addEventListener('change', main);
+
+    </script>
+</body>
+</html>
